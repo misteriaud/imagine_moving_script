@@ -37,9 +37,9 @@ class Item:
     def move_to(self, new_path):
         try:
             shutil.move(self.path, new_path)
-        except:
-            print("error: couldn't move the file", self.path, "to", new_path)
-        print("move", self.path, "to", new_path)
+            print("move", self.path, "to", new_path)
+        except shutil.Error as e:
+            print("error: couldn't move the file", self.path, "to", new_path, "(", e, ")")
 
 def main():
     folder_path = "."
