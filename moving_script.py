@@ -1,6 +1,9 @@
 import os
 import time
 import shutil
+import logging
+
+logging.basicConfig(level=logging.INFO, filename='app.log', filemode='a', format='%(asctime)s - %(levelname)s - %(message)s')
 
 def get_directory_size(directory):
     """Returns the `directory` size in bytes."""
@@ -25,7 +28,7 @@ class Item:
     def __init__(self, path):
         self.path = path
         self.size = get_directory_size(path)
-        print("init ", self.path, ": ", self.size)
+        logging.debug(f'detect {self.path} ({self.size}B)')
 
     def has_changed(self):
         current_size = get_directory_size(self.path)
@@ -37,12 +40,13 @@ class Item:
     def move_to(self, new_path):
         try:
             shutil.move(self.path, new_path)
-            print("move", self.path, "to", new_path)
+            logging.debug(f'move {self.path} to {new_path}')
         except shutil.Error as e:
-            print("error: couldn't move the file", self.path, "to", new_path, "(", e, ")")
+            logging.error(f'error: couldn\'t move {self.path} to {new_path} ({e})')
 
 def main():
-    folder_path = "."
+    logging.info("start")
+    folder_path = "src"
     dest_path = "dest"
 
     items = []
@@ -59,6 +63,8 @@ def main():
         for item in to_move:
             item.move_to(dest_path)
             items.remove(item)
+
+    logging.info("end\n")
 
 if __name__ == "__main__":
     main()
