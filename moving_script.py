@@ -2,8 +2,8 @@ import os
 import time
 import shutil
 import logging
+import argparse
 
-logging.basicConfig(level=logging.INFO, filename='app.log', filemode='a', format='%(asctime)s - %(levelname)s - %(message)s')
 
 def get_directory_size(directory):
     """Returns the `directory` size in bytes."""
@@ -45,9 +45,20 @@ class Item:
             logging.error(f'error: couldn\'t move {self.path} to {new_path} ({e})')
 
 def main():
-    logging.info("start")
-    folder_path = "src"
-    dest_path = "dest"
+    parser = argparse.ArgumentParser(
+        prog = 'Utilitaire de deplacement de fichier',
+        description = 'Permet de deplacer tous les fichiers et dossiers présents du dossier source au dossier destination, en verifiant que les elements ne sois pas en cours de dépot.'
+    )
+    parser.add_argument('src_path', help='emplacement du dossier source')
+    parser.add_argument('dest_path', help='emplacement du dossier destination')
+    parser.add_argument('time_to_wait', help='temps d\attente en seconde entre chaque boucle', type=int)
+    args = parser.parse_args()
+
+    folder_path = args.src_path
+    dest_path = args.dest_path
+
+    logging.basicConfig(level=logging.INFO, filename=f'{__file__}.logs', filemode='a', format='%(asctime)s - %(levelname)s - %(message)s')
+    logging.info(f'execute {__file__} from {folder_path} to {dest_path} with {args.time_to_wait}s interval')
 
     items = []
     for elem in os.listdir(folder_path):
@@ -55,7 +66,7 @@ def main():
         items.append(Item(elem))
 
     while items:
-        time.sleep(5)
+        time.sleep(args.time_to_wait)
         to_move = []
         for item in items:
             if (not item.has_changed()):
