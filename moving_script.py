@@ -57,7 +57,7 @@ def main():
     folder_path = args.src_path
     dest_path = args.dest_path
 
-    logging.basicConfig(level=logging.INFO, filename=f'{__file__}.logs', filemode='a', format='%(asctime)s - %(levelname)s - %(message)s')
+    logging.basicConfig(level=logging.INFO, filename=f'{__file__}.logs', filemode='a', format='%(asctime)s (%(process)d) - %(levelname)s - %(message)s')
     logging.info(f'execute {__file__} from {folder_path} to {dest_path} with {args.time_to_wait}s interval')
 
     items = []
@@ -67,15 +67,16 @@ def main():
 
     while items:
         time.sleep(args.time_to_wait)
-        to_move = []
+        moved_items = []
         for item in items:
-            if (not item.has_changed()):
-                to_move.append(item)
-        for item in to_move:
-            item.move_to(dest_path)
-            items.remove(item)
-
-    logging.info("end\n")
+            try:
+                if (not item.has_changed()):
+                    item.move_to(dest_path)
+                    moved_items.append(item)
+            except:
+                moved_items.append(item)
+        for moved_item in moved_items:
+            items.remove(moved_item)
 
 if __name__ == "__main__":
     main()
