@@ -39,7 +39,8 @@ class Item:
 
     def move_to(self, new_path):
         try:
-            shutil.move(self.path, new_path)
+            new_path = shutil.move(self.path, new_path)
+            shutil.chown(new_path, group="GRP_NAS_Tampon")
             logging.debug(f'move {self.path} to {new_path}')
         except shutil.Error as e:
             logging.error(f'error: couldn\'t move {self.path} to {new_path} ({e})')
@@ -58,7 +59,6 @@ def main():
     dest_path = args.dest_path
 
     logging.basicConfig(level=logging.INFO, format='%(asctime)s (%(process)d) - %(levelname)s - %(message)s')
-    logging.info(f'execute {__file__} from {folder_path} to {dest_path} with {args.time_to_wait}s interval')
 
     items = []
     for elem in os.listdir(folder_path):

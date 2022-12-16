@@ -10,5 +10,5 @@ git clone https://github.com/misteriaud/imagine_moving_script.git moving_script
 cd moving_script
 
 # lancement
-python moving_script.py "src_folder" "dest_foler" 5 || /usr/local/bin/python3 moving_script.py "src_folder" "dest_foler" 5
+python moving_script.py "src_folder" "dest_foler" 5
 ```
