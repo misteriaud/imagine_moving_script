@@ -57,7 +57,7 @@ def main():
     folder_path = args.src_path
     dest_path = args.dest_path
 
-    logging.basicConfig(level=logging.INFO, filename=f'{__file__}.logs', filemode='a', format='%(asctime)s (%(process)d) - %(levelname)s - %(message)s')
+    logging.basicConfig(level=logging.INFO, format='%(asctime)s (%(process)d) - %(levelname)s - %(message)s')
     logging.info(f'execute {__file__} from {folder_path} to {dest_path} with {args.time_to_wait}s interval')
 
     items = []
