@@ -41,7 +41,7 @@ class Item:
     def move_to(self, new_path):
         try:
             new_path = shutil.move(self.path, new_path)
-            shutil.chown(new_path, user=self.stat.st_uid, group=self.stat.st_uid)
+            shutil.chown(new_path, user=self.stat.st_uid, group=self.stat.st_gid)
             os.chmod(new_path, 750)
             logging.debug(f'move {self.path} to {new_path}')
         except shutil.Error as e:
@@ -71,12 +71,9 @@ def main():
         time.sleep(args.time_to_wait)
         moved_items = []
         for item in items:
-            # try:
-                if (not item.has_changed()):
-                    item.move_to(dest_path)
-                    moved_items.append(item)
-            # except:
-                # moved_items.append(item)
+            if (not item.has_changed()):
+                item.move_to(dest_path)
+                moved_items.append(item)
         for moved_item in moved_items:
             items.remove(moved_item)
 
