@@ -41,7 +41,7 @@ class Item:
     def move_to(self, new_path):
         try:
             new_path = shutil.move(self.path, new_path)
-            shutil.chown(new_path, user=self.uid, group="GRP_NAS_Tampon")
+            shutil.chown(new_path, user=self.uid)
             logging.debug(f'move {self.path} to {new_path}')
         except shutil.Error as e:
             logging.error(f'error: couldn\'t move {self.path} to {new_path} ({e})')
