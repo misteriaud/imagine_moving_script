@@ -28,7 +28,7 @@ class Item:
     def __init__(self, path):
         self.path = path
         self.size = get_directory_size(path)
-        self.uid = os.stat(path).st_uid
+        self.stat = os.stat(path)
         logging.debug(f'detect {self.path} ({self.size}B) with uid {self.uid}')
 
     def has_changed(self):
@@ -41,8 +41,7 @@ class Item:
     def move_to(self, new_path):
         try:
             new_path = shutil.move(self.path, new_path)
-            # shutil.chown(new_path, user=self.uid)
-            shutil.chown(new_path, user=self.uid, group="GRP_NAS_Tampon")
+            shutil.chown(new_path, user=self.stat.st_uid, group=self.stat.st_gid)
             logging.debug(f'move {self.path} to {new_path}')
         except shutil.Error as e:
             logging.error(f'error: couldn\'t move {self.path} to {new_path} ({e})')
