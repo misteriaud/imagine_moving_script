@@ -54,18 +54,22 @@ def main():
             elem = os.path.join(folder_path, elem)
             size = get_directory_size(elem)
             logging.debug(f'detect file {elem} of {size}b')
-            if elem not in elems_in_folder:
+            if elem not in elems_in_folder: # si le fichier existe en FS mais pas en Set
                 logging.debug(f'adding file {elem} to dict')
                 elems_in_folder[elem] = size
-            elif (elems_in_folder[elem] != size):
+            elif (elems_in_folder[elem] != size): # si la taille du fichier a changer
                 logging.debug(f'it was {elems_in_folder[elem]} and now {size}b')
                 elems_in_folder[elem] = size
-            else:
+            else: # Si le fichier n'a pas change de taille
                 logging.debug(f'Size stayed the same as before')
                 move_to(elem, dest_path)
                 del elems_in_folder[elem]
-        if (not elems_in_folder):
+        
+        if (not elems_in_folder): # s'il n'y a plus d'element dans dict
             break
+        for path in elems_in_folder:
+            if not os.path.exists(path):
+                del elems_in_folder
         time.sleep(args.time_to_wait)
 
 if __name__ == "__main__":
