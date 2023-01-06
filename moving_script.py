@@ -4,7 +4,6 @@ import shutil
 import logging
 import argparse
 
-
 def get_directory_size(directory):
     """Returns the `directory` size in bytes."""
     total = 0
@@ -32,8 +31,6 @@ def move_to(path, new_path):
         logging.debug(f'move {path} to {new_path}')
     except shutil.Error as e:
         logging.error(f'error: couldn\'t move {path} to {new_path} ({e})')
-
-
 
 def main():
     parser = argparse.ArgumentParser(
@@ -73,5 +70,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-# to send email from synology nas: https://swisstechiethoughts.wordpress.com/2014/01/20/howto-send-mail-from-synology-nas-commandline-using-google-mail-relay/
