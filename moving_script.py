@@ -23,29 +23,17 @@ def get_directory_size(directory):
         return 0
     return total
 
-class Item:
+def move_to(path, new_path):
+    try:
+        stat = os.stat(path)
+        new_path = shutil.move(path, new_path)
+        shutil.chown(new_path, user=stat.st_uid, group=stat.st_gid)
+        # os.chmod(new_path, 750)
+        logging.debug(f'move {path} to {new_path}')
+    except shutil.Error as e:
+        logging.error(f'error: couldn\'t move {path} to {new_path} ({e})')
 
-    def __init__(self, path):
-        self.path = path
-        self.size = get_directory_size(path)
-        self.stat = os.stat(path)
-        logging.debug(f'detect {self.path} ({self.size}B) with uid {self.stat.st_uid}')
 
-    def has_changed(self):
-        current_size = get_directory_size(self.path)
-        if (self.size != current_size):
-            self.size = current_size
-            return True
-        return False
-
-    def move_to(self, new_path):
-        try:
-            new_path = shutil.move(self.path, new_path)
-            shutil.chown(new_path, user=self.stat.st_uid, group=self.stat.st_uid)
-            os.chmod(new_path, 750)
-            logging.debug(f'move {self.path} to {new_path}')
-        except shutil.Error as e:
-            logging.error(f'error: couldn\'t move {self.path} to {new_path} ({e})')
 
 def main():
     parser = argparse.ArgumentParser(
@@ -62,23 +50,26 @@ def main():
 
     logging.basicConfig(level=logging.DEBUG, format='%(asctime)s (%(process)d) - %(levelname)s - %(message)s')
 
-    items = []
-    for elem in os.listdir(folder_path):
-        elem = os.path.join(folder_path, elem)
-        items.append(Item(elem))
+    elems_in_folder = {}
 
-    while items:
+    while True:
+        for elem in os.listdir(folder_path):
+            elem = os.path.join(folder_path, elem)
+            size = get_directory_size(elem)
+            logging.debug(f'detect file {elem} of {size}b')
+            if elem not in elems_in_folder:
+                logging.debug(f'adding file {elem} to dict')
+                elems_in_folder[elem] = size
+            elif (elems_in_folder[elem] != size):
+                logging.debug(f'it was {elems_in_folder[elem]} and now {size}b')
+                elems_in_folder[elem] = size
+            else:
+                logging.debug(f'Size stayed the same as before')
+                move_to(elem, dest_path)
+                del elems_in_folder[elem]
+        if (not elems_in_folder):
+            break
         time.sleep(args.time_to_wait)
-        moved_items = []
-        for item in items:
-            # try:
-                if (not item.has_changed()):
-                    item.move_to(dest_path)
-                    moved_items.append(item)
-            # except:
-                # moved_items.append(item)
-        for moved_item in moved_items:
-            items.remove(moved_item)
 
 if __name__ == "__main__":
     main()
