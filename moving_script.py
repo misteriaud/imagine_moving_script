@@ -29,7 +29,7 @@ class Item:
         self.path = path
         self.size = get_directory_size(path)
         self.stat = os.stat(path)
-        logging.debug(f'detect {self.path} ({self.size}B) with uid {self.uid}')
+        logging.debug(f'detect {self.path} ({self.size}B) with uid {self.stat.st_uid}')
 
     def has_changed(self):
         current_size = get_directory_size(self.path)
