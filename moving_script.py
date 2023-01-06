@@ -60,7 +60,7 @@ def main():
             elif (elems_in_folder[elem] != size): # si la taille du fichier a changer
                 logging.debug(f'it was {elems_in_folder[elem]} and now {size}b')
                 elems_in_folder[elem] = size
-            else: # Si le fichier n'a pas change de taille
+            elif (size): # Si le fichier n'a pas change de taille
                 logging.debug(f'Size stayed the same as before')
                 move_to(elem, dest_path)
                 del elems_in_folder[elem]
