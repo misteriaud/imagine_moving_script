@@ -57,19 +57,25 @@ def main():
             if elem not in elems_in_folder: # si le fichier existe en FS mais pas en Set
                 logging.debug(f'adding file {elem} to dict')
                 elems_in_folder[elem] = size
-            elif (elems_in_folder[elem] != size): # si la taille du fichier a changer
+            elif elems_in_folder[elem] != size: # si la taille du fichier a changer
                 logging.debug(f'it was {elems_in_folder[elem]} and now {size}b')
                 elems_in_folder[elem] = size
-            elif (size): # Si le fichier n'a pas change de taille
-                logging.debug(f'Size stayed the same as before')
+            elif size: # Si le fichier n'a pas change de taille mais que sa taille est superieur à 0
+                logging.debug(f'Size stayed the same as before (now: {size}, before: {elems_in_folder[elem]}')
                 move_to(elem, dest_path)
                 del elems_in_folder[elem]
-        
-        if (not elems_in_folder): # s'il n'y a plus d'element dans dict
-            break
-        for path in elems_in_folder:
+
+        elems_to_remove = []
+        for path in elems_in_folder: # Retire les fichier qui sont dans le dict mais plus dans le FS
             if not os.path.exists(path):
-                del elems_in_folder
+                logging.debug(f'{path} was removed from outside')
+                elems_to_remove.append(path)
+
+        for path in elems_to_remove:
+            del elems_in_folder[path]
+
+        if not elems_in_folder: # s'il n'y a plus d'element dans dict
+            break
         time.sleep(args.time_to_wait)
 
 if __name__ == "__main__":
