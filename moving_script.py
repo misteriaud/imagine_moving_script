@@ -3,6 +3,7 @@ import time
 import shutil
 import logging
 import argparse
+import subprocess
 
 def get_directory_size(directory):
     """Returns the `directory` size in bytes."""
@@ -25,12 +26,13 @@ def get_directory_size(directory):
 def move_to(path, new_path):
     try:
         stat = os.stat(path)
-        new_path = shutil.move(path, new_path)
-        shutil.chown(new_path, user=stat.st_uid, group=stat.st_gid)
+        subprocess.run(['mv', path, new_path], check = True)
+        # new_path = shutil.move(path, new_path)
+        # shutil.chown(new_path, user=stat.st_uid, group=stat.st_gid)
         # os.chmod(new_path, 750)
-        logging.debug(f'move {path} to {new_path}')
-    except shutil.Error as e:
-        logging.error(f'error: couldn\'t move {path} to {new_path} ({e})')
+        logging.info(f'move {path} to {new_path}')
+    except subprocess.CalledProcessError as e:
+        logging.error(f'error: couldn\'t move {path} to {new_path}')
 
 def main():
     parser = argparse.ArgumentParser(
@@ -45,7 +47,7 @@ def main():
     folder_path = args.src_path
     dest_path = args.dest_path
 
-    logging.basicConfig(level=logging.DEBUG, format='%(asctime)s (%(process)d) - %(levelname)s - %(message)s')
+    logging.basicConfig(level=logging.INFO, format='%(asctime)s (%(process)d) - %(levelname)s - %(message)s')
 
     elems_in_folder = {}
 
