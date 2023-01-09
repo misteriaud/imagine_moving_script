@@ -50,7 +50,7 @@ def main():
 
     while True:
         for elem in os.listdir(folder_path):
-            if (elem.startswith(".")):
+            if (elem.startswith(".") or elem == "@eaDir"):
                 continue
             elem = os.path.join(folder_path, elem)
             size = get_directory_size(elem)
