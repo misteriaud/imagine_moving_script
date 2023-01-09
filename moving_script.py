@@ -27,9 +27,6 @@ def move_to(path, new_path):
     try:
         stat = os.stat(path)
         subprocess.run(['mv', path, new_path], check = True)
-        # new_path = shutil.move(path, new_path)
-        # shutil.chown(new_path, user=stat.st_uid, group=stat.st_gid)
-        # os.chmod(new_path, 750)
         logging.info(f'move {path} to {new_path}')
     except subprocess.CalledProcessError as e:
         logging.error(f'error: couldn\'t move {path} to {new_path}')
@@ -53,6 +50,8 @@ def main():
 
     while True:
         for elem in os.listdir(folder_path):
+            if (elem.startswith(".")):
+                continue
             elem = os.path.join(folder_path, elem)
             size = get_directory_size(elem)
             logging.debug(f'detect file {elem} of {size}b')
