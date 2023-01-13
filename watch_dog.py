@@ -2,8 +2,9 @@
 import time
 from watchdog.observers import Observer
 from watchdog.observers import api
-from watchdog.observers import polling
+from watchdog.observers.inotify import InotifyObserver
 from watchdog.events import FileSystemEventHandler
+from multiprocessing import Pipe
 
 import os
 import logging
@@ -11,73 +12,53 @@ import argparse
 import subprocess
 import re
 
-src_path = ''
-dest_path = ''
-items_open = {}
-# items_open = []
-to_move = []
+class CustomObserver(InotifyObserver):
+    def __init__(self, conn, timeout=...):
+        self.conn = conn
+        super().__init__(timeout)
 
-class MyHandler(FileSystemEventHandler):
-    def dispatch(self, event):
-        event_type = event.event_type
-        path = event.src_path
-        is_directory = event.is_directory
-        if (event_type != "created" and event_type != "closed") or is_directory:
+    def dispatch_events(self, event_queue):
+        entry = event_queue.get(block=True)
+        if entry is api.EventDispatcher._stop_event:
             return
-        regex = r"(?<=" + re.escape(src_path) + r")[^/]*"
-        item = re.search(regex, path).group(0)
-        if not item in items_open:
-            items_open[item] = 0
-        if event_type == "created":
-            items_open[item] += 1
-        else:
-            items_open[item] -= 1
-        logging.info(f'{event_type} \t{item} - {items_open[item]}')
+        event, _ = entry
 
-def moveItemsWhichWhereCopied():
-    for path, open in items_open.items():
-        logging.info(f"{path}: {open}")
-        if not open:
-            to_move.append(path)
-    been_moved = []
-    for path in to_move:
-        if path not in items_open:
-            been_moved.append(path)
-        if items_open[path] == 0:
-            moveSyscall(path)
-            del items_open[path]
-            been_moved.append(path)
-    for moved in been_moved:
-        to_move.remove(moved)
+        with self._lock:
+            if event.is_directory:
+                return
+            if event.event_type == "created" or event.event_type == "modified":
+                self.conn.send(event.src_path)
 
-def moveSyscall(path):
-    full_path = os.path.join(src_path, path)
+        event_queue.task_done()
+
+def moveSyscall(path, args):
+    full_path = os.path.join(args.src_path, path)
     try:
-        subprocess.run(['mv', full_path, dest_path], check = True)
-        logging.info(f'move {path} to {dest_path}')
-    except subprocess.CalledProcessError as e:
-        logging.error(f'error: couldn\'t move {path} to {dest_path}')
+        subprocess.run(['mv', full_path, args.dest_path], check = True)
+        logging.info(f'move {path}')
+    except:
+        pass
+        # logging.error(f'error: couldn\'t move {path} to {dest_path}')
 
-# def scanEvents(event_queue):
-#     while not event_queue.empty():
-#         entry = event_queue.get(block=True)
-#         event, _ = entry
-#         event_type = event.event_type
-#         path = event.src_path
-#         is_directory = event.is_directory
-#         if (event_type != "created" and event_type != "closed") or is_directory:
-#             continue
-#         regex = r"(?<=" + re.escape(src_path) + r")[^/]*"
-#         item = re.search(regex, path).group(0)
-#         if not item in items_open:
-#             items_open[item] = 0
-#         if event_type == "created":
-#             items_open[item] += 1
-#         else:
-#             items_open[item] -= 1
-#         logging.info(f'{event_type} \t{path} - {items_open[item]}')
-
-
+def routine(conn, args):
+    items = dict()
+    while True:
+        try:
+            if conn.poll(1):
+                path = conn.recv()
+                regex = r"(?<=" + re.escape(args.src_path) + r")[^/]*"
+                item = re.search(regex, path).group(0)
+                items[item] = time.time_ns()
+            to_move = []
+            current_time = time.time_ns()
+            for item, last_modified in items.items():
+                if current_time - last_modified > args.time_to_wait * 1e9:
+                    to_move.append(item)
+            for item in to_move:
+                del items[item]
+                moveSyscall(item, args)
+        except Exception:
+            logging.error("Unkown error occured")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
@@ -88,20 +69,19 @@ if __name__ == "__main__":
     parser.add_argument('dest_path', help='emplacement du dossier destination')
     parser.add_argument('time_to_wait', help='temps d\attente en seconde entre chaque boucle', type=int)
     args = parser.parse_args()
-    src_path = args.src_path
-    dest_path = args.dest_path
-    logging.basicConfig(level=logging.INFO, format='%(asctime)s (%(process)d) - %(levelname)s - %(message)s')
+    # logging.basicConfig(level=logging.INFO, filename="app.log", format='%(asctime)s (%(process)d) - %(levelname)s - %(message)s')
+    logging.basicConfig(level=logging.INFO, format='%(asctime)s\t%(message)s\t')
+    if not os.path.isdir(args.src_path) or not os.path.isdir(args.dest_path):
+        raise Exception("arguments arent describing directories")
+    logging.info(f"start watchdog over {args.src_path}")
 
-    event_handler = MyHandler()
-    observer = Observer()
-    observer.schedule(event_handler, path=src_path, recursive=True)
+    parent_conn, child_conn = Pipe(duplex=False)
+    observer = CustomObserver(child_conn)
+    observer.schedule(FileSystemEventHandler(), path=args.src_path, recursive=True)
     observer.start()
 
     try:
-        while True:
-            time.sleep(args.time_to_wait)
-            # scanEvents(observer.event_queue)
-            # moveItemsWhichWhereCopied()
+        routine(parent_conn, args)
     except KeyboardInterrupt:
         observer.stop()
     observer.join()
