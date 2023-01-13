@@ -1,6 +1,8 @@
 #!/usr/bin/python
 import time
 from watchdog.observers import Observer
+from watchdog.observers import api
+from watchdog.observers import polling
 from watchdog.events import FileSystemEventHandler
 
 import os
@@ -12,27 +14,29 @@ import re
 src_path = ''
 dest_path = ''
 items_open = {}
+# items_open = []
 to_move = []
 
 class MyHandler(FileSystemEventHandler):
-    def on_created(self, event):
-        if event.is_directory:
+    def dispatch(self, event):
+        event_type = event.event_type
+        path = event.src_path
+        is_directory = event.is_directory
+        if (event_type != "created" and event_type != "closed") or is_directory:
             return
-        item = re.search(re.escape(src_path) + r"([^/]*)", event.src_path).group(1)
-        # item = event.src_path.replace(src_path + "/", "")
+        regex = r"(?<=" + re.escape(src_path) + r")[^/]*"
+        item = re.search(regex, path).group(0)
         if not item in items_open:
             items_open[item] = 0
-        items_open[item] += 1
-        logging.info(f'open - item open for {event.src_path}: {item} ({items_open[item]})')
-
-    def on_closed(self, event):
-        item = re.search(re.escape(src_path) + r"([^/]*)", event.src_path)
-        # item = event.src_path.replace(src_path + "/", "")
-        items_open[item] -= 1
-        logging.info(f'close - item open for {event.src_path}: {item} ({items_open[item]})')
+        if event_type == "created":
+            items_open[item] += 1
+        else:
+            items_open[item] -= 1
+        logging.info(f'{event_type} \t{item} - {items_open[item]}')
 
 def moveItemsWhichWhereCopied():
     for path, open in items_open.items():
+        logging.info(f"{path}: {open}")
         if not open:
             to_move.append(path)
     been_moved = []
@@ -54,6 +58,26 @@ def moveSyscall(path):
     except subprocess.CalledProcessError as e:
         logging.error(f'error: couldn\'t move {path} to {dest_path}')
 
+# def scanEvents(event_queue):
+#     while not event_queue.empty():
+#         entry = event_queue.get(block=True)
+#         event, _ = entry
+#         event_type = event.event_type
+#         path = event.src_path
+#         is_directory = event.is_directory
+#         if (event_type != "created" and event_type != "closed") or is_directory:
+#             continue
+#         regex = r"(?<=" + re.escape(src_path) + r")[^/]*"
+#         item = re.search(regex, path).group(0)
+#         if not item in items_open:
+#             items_open[item] = 0
+#         if event_type == "created":
+#             items_open[item] += 1
+#         else:
+#             items_open[item] -= 1
+#         logging.info(f'{event_type} \t{path} - {items_open[item]}')
+
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
@@ -65,7 +89,6 @@ if __name__ == "__main__":
     parser.add_argument('time_to_wait', help='temps d\attente en seconde entre chaque boucle', type=int)
     args = parser.parse_args()
     src_path = args.src_path
-    # src_path = re.sub(r"^\.\/", "", args.src_path)
     dest_path = args.dest_path
     logging.basicConfig(level=logging.INFO, format='%(asctime)s (%(process)d) - %(levelname)s - %(message)s')
 
@@ -77,7 +100,8 @@ if __name__ == "__main__":
     try:
         while True:
             time.sleep(args.time_to_wait)
-            moveItemsWhichWhereCopied()
+            # scanEvents(observer.event_queue)
+            # moveItemsWhichWhereCopied()
     except KeyboardInterrupt:
         observer.stop()
     observer.join()
