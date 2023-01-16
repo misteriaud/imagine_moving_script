@@ -70,7 +70,7 @@ if __name__ == "__main__":
     parser.add_argument('time_to_wait', help='temps d\attente en seconde entre chaque boucle', type=int)
     args = parser.parse_args()
     # logging.basicConfig(level=logging.INFO, filename="app.log", format='%(asctime)s (%(process)d) - %(levelname)s - %(message)s')
-    logging.basicConfig(level=logging.INFO, format='%(asctime)s\t%(message)s\t')
+    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
     if not os.path.isdir(args.src_path) or not os.path.isdir(args.dest_path):
         raise Exception("arguments arent describing directories")
     args.src_path = os.path.join(args.src_path, "")
