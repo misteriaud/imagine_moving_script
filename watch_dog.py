@@ -37,8 +37,7 @@ def moveSyscall(path, args):
         subprocess.run(['mv', full_path, args.dest_path], check = True)
         logging.info(f'move {path}')
     except:
-        pass
-        # logging.error(f'error: couldn\'t move {path} to {dest_path}')
+        logging.error(f'error: couldn\'t move {path} to {args.dest_path}')
 
 def routine(conn, args):
     items = dict()
