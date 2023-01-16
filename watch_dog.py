@@ -73,6 +73,8 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO, format='%(asctime)s\t%(message)s\t')
     if not os.path.isdir(args.src_path) or not os.path.isdir(args.dest_path):
         raise Exception("arguments arent describing directories")
+    args.src_path = os.path.join(args.src_path, "")
+    args.dest_path = os.path.join(args.dest_path, "")
     logging.info(f"start watchdog over {args.src_path}")
 
     parent_conn, child_conn = Pipe(duplex=False)
