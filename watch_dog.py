@@ -48,7 +48,8 @@ def routine(conn, args):
                 path = conn.recv()
                 regex = r"(?<=" + re.escape(args.src_path) + r")[^/]*"
                 item = re.search(regex, path).group(0)
-                items[item] = time.time_ns()
+                if not item.startswith(".") and item != "@earDir":
+                    items[item] = time.time_ns()
             to_move = []
             current_time = time.time_ns()
             for item, last_modified in items.items():
